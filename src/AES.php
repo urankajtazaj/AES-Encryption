@@ -41,7 +41,7 @@ class AES
     private function subBytes(array $state): array
     {
         for ($i = 0; $i < sizeof(self::SBOX); $i++) {
-            for ($j = 0; $j < sizeof(self::SBOX[0]); $j++) {
+            for ($j = 0; $j < sizeof(self::SBOX[$i]); $j++) {
                 $hex = $state[$i][$j];
                 $state = self::SBOX[$hex / 16][$hex % 16];
             }
@@ -51,21 +51,22 @@ class AES
     }
 
     /**
-     * Explanation:
-     * 1. (3 - 1) mod 4 = 2
-     * 1. (2 - 1) mod 4 = 1
-     * 1. (1 - 1) mod 4 = 0
-     * 1. (0 - 1) mod 4 = 3
+     * r c: (c - r) mod 4 = new c
+     * ---------------------------
+     * 1 3: (3 - 1) mod 4 = 2
+     * 1 2: (2 - 1) mod 4 = 1
+     * 1 1: (1 - 1) mod 4 = 0
+     * 1 0: (0 - 1) mod 4 = 3
      *
-     * 2. (3 - 2) mod 4 = 1
-     * 2. (2 - 2) mod 4 = 0
-     * 2. (1 - 2) mod 4 = 3
-     * 2. (0 - 2) mod 4 = 2
+     * 2 3: (3 - 2) mod 4 = 1
+     * 2 2: (2 - 2) mod 4 = 0
+     * 2 1: (1 - 2) mod 4 = 3
+     * 2 0: (0 - 2) mod 4 = 2
      *
-     * 3. (3 - 3) mod 4 = 0
-     * 3. (2 - 3) mod 4 = 3
-     * 3. (1 - 3) mod 4 = 2
-     * 3. (0 - 3) mod 4 = 1
+     * 3 3: (3 - 3) mod 4 = 0
+     * 3 2: (2 - 3) mod 4 = 3
+     * 3 1: (1 - 3) mod 4 = 2
+     * 3 0: (0 - 3) mod 4 = 1
      *
      * @param int[][] $state
      * @return int[][]
