@@ -23,7 +23,7 @@ class AES
         [0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16]
     ];
 
-
+    private const RC=[0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36];
 
     /**
      * @param string $plaintext
@@ -33,12 +33,28 @@ class AES
     {
     }
 
-            /**
+    /**
     *
-    * @param int[][] $key
+    * @param string $string
+    * @return string $string 
+    */
+    private function makeTwoChars($string)
+    {
+        if(strlen($string)==1)
+        {
+            $string="0".$string;
+        }
+        return $string;
+    }
+
+
+    /**
+    *
+    * @param string[][] $key
     * @return int[][] $roundKey 
     */
-    private function calculateRoundKey($key)
+    
+    private function calculateRoundKey($key,$round)
     {
         $v0=array();
         $v1=array();
@@ -51,32 +67,58 @@ class AES
             {
                 switch ($i) {
                     case 0:
-                        $v0[$j]=$key[$i][$j];
+                        $v0[$j]=$key[$j][$i];
                         break;
                     case 1:
-                        $v1[$j]=$key[$i][$j];
+                        $v1[$j]=$key[$j][$i];
                         break;
                     case 2:
-                        $v2[$j]=$key[$i][$j];
+                        $v2[$j]=$key[$j][$i];
                         break;
                     case 3:
-                        $v3[$j]=$key[$i][$j];
+                        $v3[$j]=$key[$j][$i];
                         break;
                 }
 
             }
 
+        } 
+
+        $w3_org=$v3;
+        //Shift for one to left
+        $v3_0copy=$v3[0];
+        $v3[0]=$v3[1];
+        $v3[1]=$v3[2];
+        $v3[2]=$v3[3];
+        $v3[3]=$v3_0copy;
+    
+        //Use sbox -fill with 0 before if string is only one char
+        for($i=0 ; $i<count($v0) ; $i++)
+        {
+            $v3[$i]=$this->makeTwoChars(dechex(self::SBOX[hexdec(substr($v3[$i], 0,1))][hexdec(substr($v3[$i], 1,2))]));
+        }
+        //XOR round coefficient widh first elem
+        $v3[0]=$this->makeTwoChars(dechex(hexdec($v3[0]) ^ self::RC[$round-1]));
+        for($i=0 ; $i<count($v0); $i++)
+        {
+            $v0[$i]=$this->makeTwoChars(dechex(hexdec($v0[$i]) ^ hexdec($v3[$i])));
+            $v1[$i]=$this->makeTwoChars(dechex(hexdec($v0[$i]) ^ hexdec($v1[$i])));
+            $v2[$i]=$this->makeTwoChars(dechex(hexdec($v1[$i]) ^ hexdec($v2[$i])));
+            $v3[$i]=$this->makeTwoChars(dechex(hexdec($v2[$i]) ^ hexdec($w3_org[$i])));
         }
 
-        $v3copy=self::SBOX[$v3[0] / 16][$v3[0] % 16];;
-        $v0[0]=self::SBOX[$v3[1] / 16][$v3[1] % 16];;
-        $v1[1]=self::SBOX[$v3[2] / 16][$v3[2] % 16];;
-        $v2[2]=self::SBOX[$v3[3] / 16][$v3[3] % 16];;
-        $v3[3]=$v3copy;
-        
+        //merging arrays into 2d array
+        $result=$key;
+        for($elem=0; $elem<count($v0); $elem++)
+        {
+            
+            $result[$elem][0] = strtoupper($v0[$elem]);
+            $result[$elem][1] = strtoupper($v1[$elem]);
+            $result[$elem][2] = strtoupper($v2[$elem]);
+            $result[$elem][3] = strtoupper($v3[$elem]);
+        }
 
-        print_r($v3);
-        return $key;
+        return $result;
 
     }
 
@@ -88,50 +130,36 @@ class AES
      */
     public function generateKeys(array $initialKey): array
     {
-        $w =array();
+        $w =array();//holds all 10 keys
         $index=0;
+        //Fill first key in the array
         for($i=0 ; $i<count($initialKey); $i++)
         {
             $w[$i]=$initialKey[$i];
             $index++;
         }
-        $roundKey=$w;
-        for($round=1 ; $round<=1 ; $round++)
+        $roundKey=$w;//this is 4x4 matrix with a key for every round
+
+        //Calculate 10 keys and assign to variable "w"
+        for($round=1 ; $round<=10 ; $round++)
         {
-            $roundKey=$this->calculateRoundKey($roundKey);
-            $w = array_merge($w, $roundKey); 
+            $roundKey=$this->calculateRoundKey($roundKey,$round);
+            $w = array_merge($w, $roundKey); //merging keys together (adding -this- round key to overall keys)
         }  
+
+        // for($i=0 ; $i<count($w); $i++)
+        // {
+        //     echo implode("",$w[$i]);
+        //     echo("\n");
+        // }
         return $w;
     }
-
-
-    /**
-     * @return string
-     */
-    public function getPlaintext(): string
-    {
-        return $this->plaintext;
-    }
-
-    /**
-     * @return string
-     */
-    public function getInitialKey(): string
-    {
-        return $this->initialKey;
-    }
 }
-$testObject = new GlobalAES();
+//$testObject = new GlobalAES();
 
-$key = array(
-    array( "2B", "28","AB","09"),
-    array( "7E", "AE","F7","CF"),
-    array( "15", "D2","15","4F"),
-    array( "16", "A6","88","3C"));
-$rez=$testObject->generateKeys($key);
-for($i=0 ; $i<count($rez) ; $i++){
-    for($j=0 ; $j<count($rez) ; $j++){
-       // echo($rez[$i][$j]);
-    }
-    //echo("\n");
-}
+//$key = array(
+//     array( "2B", "28","AB","09"),
+//     array( "7E", "AE","F7","CF"),
+//     array( "15", "D2","15","4F"),
+//     array( "16", "A6","88","3C"));
+// $rez=$testObject->generateKeys($key);
