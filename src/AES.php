@@ -44,7 +44,7 @@ class AES
         for ($i = 0; $i < sizeof($state); $i++) {
             for ($j = 0; $j < sizeof($state[0]); $j++) {
                 $hex = hexdec($state[$i][$j]);
-                $state[$i][$j] = self::SBOX[$hex / 16][$hex % 16];
+                $state[$i][$j] = dechex(self::SBOX[$hex / 16][$hex % 16]);
             }
         }
 
