@@ -24,7 +24,7 @@ class AES
     ];
 
     private const RC=[0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36];
-
+    private array $allKeys;
     /**
      * @param string $plaintext
      * @param string $initialKey
@@ -53,8 +53,7 @@ class AES
     * @param string[][] $key
     * @return int[][] $roundKey 
     */
-    
-    private function calculateRoundKey($key,$round)
+    private function calculateRoundKey($key,$round): array
     {
         $v0=array();
         $v1=array();
@@ -128,7 +127,7 @@ class AES
      * @param int[][] $initialKey
      * @return int[][] $w
      */
-    public function generateKeys(array $initialKey): array
+    public function generateKeys(array $initialKey)
     {
         $w =array();//holds all 10 keys
         $index=0;
@@ -152,14 +151,37 @@ class AES
         //     echo implode("",$w[$i]);
         //     echo("\n");
         // }
-        return $w;
+        $this->allKeys = $w;
+    }
+
+    /**
+     *
+     * @param int $round
+     * @return int[][] $thisRoundKey
+     */
+    public function getKey($round):array
+    {
+        $thisRoundKey=array();
+        $start=$round*4;
+        $end=$start+4;
+        $count=0;
+        while($start<$end)
+        {
+            $thisRoundKey[$count]=$this->allKeys[$start];
+            $start++;
+            $count++;
+        }
+        return $thisRoundKey;
+
     }
 }
-//$testObject = new GlobalAES();
+// $testObject = new GlobalAES();
 
-//$key = array(
+// $key = array(
 //     array( "2B", "28","AB","09"),
 //     array( "7E", "AE","F7","CF"),
 //     array( "15", "D2","15","4F"),
 //     array( "16", "A6","88","3C"));
-// $rez=$testObject->generateKeys($key);
+// $testObject->generateKeys($key);
+
+// print_r($testObject->getKey(10));
