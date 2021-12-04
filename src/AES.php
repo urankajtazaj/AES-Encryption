@@ -1,12 +1,20 @@
 <?php
+//@ini_set("display_errors", 1);
 
 class AES
 {
+
     private string $plaintext;
+    private string $initialKey;
 
-    public function __construct()
+    /**
+     * @param string $plaintext
+     * @param string $initialKey
+     */
+    public function __construct(string $plaintext, string $initialKey)
     {
-
+        $this->initialKey = $initialKey;
+        $this->plaintext = $plaintext;
     }
 
     /**
@@ -14,14 +22,17 @@ class AES
      * @param $number
      * @return int[][]
      */
-    private static function mixColumns(array $state, $number) {
+    public static function mixColumns(array $state) {
 
-        for ($column = 0; $column < $number; $column++) {
-            $a = $number;
-            $b = $number;
-            for ($i=0; $i<$number; $i++) {
+        for ($column = 0; $column < 4; $column++) {
+            $a = array(4);
+            $b = array(4);
+            for ($i=0; $i<4; $i++) {
                 $a[$i] = $state[$i][$column];
-                $b[$i] = $state[$i][$column]&0x80 ? $state[$i][$column]<<1 ^ 0x011b : $state[$i][$column]<<1;
+                $b[$i] = $state[$i][$column] & 0x80 ? $state[$i][$column]<<1 ^ 0x011b : $state[$i][$column]<<1;
+                print_r($a[$i]);
+                print_r($b[$i]);
+
                 /* GF modulo: if $state[$i][$column] >= 128, then it will overflow when shifted left, so reduce */
                 //XOR with the primitive polynomial x^8 + x^4 + x^3 + x + 1 (0b1_0001_1011) – you can change it but it must be irreducible */
             }
@@ -35,7 +46,7 @@ class AES
     }
 
     //XOR me key e gjenerum per mem na jep rez, qe osht state
-    //pozita (0,0) e state qe vjen prej function para addRoundKey,ka me u XOR me Key ne poziten(0,0)...(3,3)
+    //pozita (0,0) e state(array) qe vjen prej function para addRoundKey,ka me u XOR me Key ne poziten(0,0)...(3,3)
     private static function addRoundKey($state, $expandedKey, $round, $number)
     {
         for ($rows = 0; $rows < $number; $rows++) {
@@ -44,6 +55,22 @@ class AES
             }
         }
         return $state;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPlaintext(): string
+    {
+        return $this->plaintext;
+    }
+
+    /**
+     * @return string
+     */
+    public function getInitialKey(): string
+    {
+        return $this->initialKey;
     }
 
 }
