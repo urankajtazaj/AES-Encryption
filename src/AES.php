@@ -16,8 +16,8 @@ class AES
     private static function mixColumns(array $state) {
 
         for ($column = 0; $column < 4; $column++) {
-            $a = array(4);
-            $b = array(4);
+            $a = 4;
+            $b = 4;
             for ($i=0; $i<4; $i++) {
                 $a[$i] = $state[$i][$column];
                 $b[$i] = $state[$i][$column]&0x80 ? $state[$i][$column]<<1 ^ 0x011b : $state[$i][$column]<<1;
@@ -29,6 +29,18 @@ class AES
             $state[1][$column] = $a[0] ^ $b[1] ^ $a[2] ^ $b[2] ^ $a[3];
             $state[2][$column] = $a[0] ^ $a[1] ^ $b[2] ^ $a[3] ^ $b[3];
             $state[3][$column] = $a[0] ^ $b[0] ^ $a[1] ^ $a[2] ^ $b[3];
+        }
+        return $state;
+    }
+
+    //XOR me key e gjenerum per mem na jep rez, qe osht state
+    //pozita (0,0) e state qe vjen prej function para addRoundKey,ka me u XOR me Key ne poziten(0,0)...(3,3)
+    private static function addRoundKey($state, $expandedKey, $round)
+    {
+        for ($rows = 0; $rows < 4; $rows++) {
+            for ($column = 0; $column < 4; $column++) {
+                $state[$rows][$column] ^= $expandedKey[$round * 4 + $column][$rows];
+            }
         }
         return $state;
     }
