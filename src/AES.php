@@ -11,14 +11,15 @@ class AES
 
     /**
      * @param int[][] $state
+     * @param $number
      * @return int[][]
      */
-    private static function mixColumns(array $state) {
+    private static function mixColumns(array $state, $number) {
 
-        for ($column = 0; $column < 4; $column++) {
-            $a = 4;
-            $b = 4;
-            for ($i=0; $i<4; $i++) {
+        for ($column = 0; $column < $number; $column++) {
+            $a = $number;
+            $b = $number;
+            for ($i=0; $i<$number; $i++) {
                 $a[$i] = $state[$i][$column];
                 $b[$i] = $state[$i][$column]&0x80 ? $state[$i][$column]<<1 ^ 0x011b : $state[$i][$column]<<1;
                 /* GF modulo: if $state[$i][$column] >= 128, then it will overflow when shifted left, so reduce */
@@ -35,11 +36,11 @@ class AES
 
     //XOR me key e gjenerum per mem na jep rez, qe osht state
     //pozita (0,0) e state qe vjen prej function para addRoundKey,ka me u XOR me Key ne poziten(0,0)...(3,3)
-    private static function addRoundKey($state, $expandedKey, $round)
+    private static function addRoundKey($state, $expandedKey, $round, $number)
     {
-        for ($rows = 0; $rows < 4; $rows++) {
-            for ($column = 0; $column < 4; $column++) {
-                $state[$rows][$column] ^= $expandedKey[$round * 4 + $column][$rows];
+        for ($rows = 0; $rows < $number; $rows++) {
+            for ($column = 0; $column < $number; $column++) {
+                $state[$rows][$column] ^= $expandedKey[$round * $number + $column][$rows];
             }
         }
         return $state;
