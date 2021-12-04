@@ -1,4 +1,6 @@
-﻿<?php
+<?php
+
+use AES as GlobalAES;
 
 class AES
 {
@@ -21,67 +23,87 @@ class AES
         [0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16]
     ];
 
-    private string $plaintext;
-    private string $initialKey;
+
 
     /**
      * @param string $plaintext
      * @param string $initialKey
      */
-    public function __construct(string $plaintext, string $initialKey)
+    public function __construct()
     {
-        $this->initialKey = $initialKey;
-        $this->plaintext = $plaintext;
     }
 
-    /**
-     * @param int[][] $state
-     * @return int[][]
-     */
-    private function subBytes(array $state): array
+            /**
+    *
+    * @param int[][] $key
+    * @return int[][] $roundKey 
+    */
+    private function calculateRoundKey($key)
     {
-        for ($i = 0; $i < sizeof(self::SBOX); $i++) {
-            for ($j = 0; $j < sizeof(self::SBOX[$i]); $j++) {
-                $hex = $state[$i][$j];
-                $state = self::SBOX[$hex / 16][$hex % 16];
+        $v0=array();
+        $v1=array();
+        $v2=array();
+        $v3=array();
+        $index=0;
+        for($i=0 ; $i<count($key); $i++)
+        {
+            for($j=0 ; $j<count($key); $j++)
+            {
+                switch ($i) {
+                    case 0:
+                        $v0[$j]=$key[$i][$j];
+                        break;
+                    case 1:
+                        $v1[$j]=$key[$i][$j];
+                        break;
+                    case 2:
+                        $v2[$j]=$key[$i][$j];
+                        break;
+                    case 3:
+                        $v3[$j]=$key[$i][$j];
+                        break;
+                }
+
             }
+
         }
 
-        return $state;
+        $v3copy=self::SBOX[$v3[0] / 16][$v3[0] % 16];;
+        $v3[0]=self::SBOX[$v3[1] / 16][$v3[1] % 16];;
+        $v3[1]=self::SBOX[$v3[2] / 16][$v3[2] % 16];;
+        $v3[2]=self::SBOX[$v3[3] / 16][$v3[3] % 16];;
+        $v3[3]=$v3copy;
+        
+
+        print_r($v3);
+        return $key;
+
     }
+
 
     /**
-     * r c: (c - r) mod 4 = new c
-     * ---------------------------
-     * 1 3: (3 - 1) mod 4 = 2
-     * 1 2: (2 - 1) mod 4 = 1
-     * 1 1: (1 - 1) mod 4 = 0
-     * 1 0: (0 - 1) mod 4 = 3
      *
-     * 2 3: (3 - 2) mod 4 = 1
-     * 2 2: (2 - 2) mod 4 = 0
-     * 2 1: (1 - 2) mod 4 = 3
-     * 2 0: (0 - 2) mod 4 = 2
-     *
-     * 3 3: (3 - 3) mod 4 = 0
-     * 3 2: (2 - 3) mod 4 = 3
-     * 3 1: (1 - 3) mod 4 = 2
-     * 3 0: (0 - 3) mod 4 = 1
-     *
-     * @param int[][] $state
-     * @return int[][]
+     * @param int[][] $initialKey
+     * @return int[][] $w
      */
-    private function shiftRows(array $state): array
+    public function generateKeys(array $initialKey): array
     {
-        $tempState = $state;
-        for ($i = 1; $i < sizeof($state); $i++) {
-            for ($j = sizeof($state[$i]) - 1; $j >= 0; $j--) {
-                $state[$i][$j] = $tempState[$i][($j - $i) % 4];
-            }
+        $w =array();
+        $index=0;
+        for($i=0 ; $i<count($initialKey); $i++)
+        {
+            $w[$i]=$initialKey[$i];
+            $index++;
         }
-
-        return $state;
+        $roundKey=$w;
+        for($round=1 ; $round<=1 ; $round++)
+        {
+            $roundKey=$this->calculateRoundKey($roundKey);
+            $w = array_merge($w, $roundKey); 
+        }  
+        return $w;
     }
+
 
     /**
      * @return string
@@ -98,6 +120,18 @@ class AES
     {
         return $this->initialKey;
     }
+}
+$testObject = new GlobalAES();
 
-
+$key = array(
+    array( "2B", "28","AB","09"),
+    array( "7E", "AE","F7","CF"),
+    array( "15", "D2","15","4F"),
+    array( "16", "A6","88","3C"));
+$rez=$testObject->generateKeys($key);
+for($i=0 ; $i<count($rez) ; $i++){
+    for($j=0 ; $j<count($rez) ; $j++){
+       // echo($rez[$i][$j]);
+    }
+    //echo("\n");
 }
