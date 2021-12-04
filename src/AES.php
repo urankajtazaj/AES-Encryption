@@ -2,6 +2,15 @@
 
 class AES
 {
+    private const MAPPER = [
+        '10' => 'A',
+        '11' => 'B',
+        '12' => 'C',
+        '13' => 'D',
+        '14' => 'E',
+        '15' => 'F',
+    ];
+
     private const SBOX = [
         //0    1     2     3     4     5     6     7     8     9     a     b     c     d     e     f
         [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76], // 0
@@ -45,7 +54,9 @@ class AES
             for ($j = 0; $j < sizeof($state[0]); $j++) {
                 $hex = hexdec($state[$i][$j]);
                 $state[$i][$j] = self::SBOX[$hex / 16][$hex % 16];
+                echo $state[$i][$j] . "\t";
             }
+            echo "\n";
         }
 
         return $state;
@@ -65,6 +76,29 @@ class AES
         }
 
         return $state;
+    }
+
+    public function printSbox(): void
+    {
+        echo "\t";
+        for ($i = 0; $i <= 15; $i++) {
+            echo " " . (self::MAPPER[$i] ?? $i) . "\t";
+        }
+        echo "\n\t";
+
+        for ($i = 0; $i <= 15; $i++) {
+            echo '________';
+        }
+
+        echo "\n";
+
+        for ($i = 0; $i < sizeof(self::SBOX); $i++) {
+            echo (self::MAPPER[$i] ?? $i) . "\t|";
+            for ($j = 0; $j < sizeof(self::SBOX[$i]); $j++) {
+                echo self::SBOX[$i][$j] . "\t";
+            }
+            echo "\n";
+        }
     }
 
     /**
