@@ -22,16 +22,16 @@ class AES
      * @param $number
      * @return int[][]
      */
-    public static function mixColumns(array $state) {
+    public static function mixColumns(array $state):array {
 
         for ($column = 0; $column < 4; $column++) {
             $a = array(4);
             $b = array(4);
             for ($i=0; $i<4; $i++) {
                 $a[$i] = $state[$i][$column];
-                $b[$i] = $state[$i][$column] & 0x80 ? $state[$i][$column]<<1 ^ 0x011b : $state[$i][$column]<<1;
-                print_r($a[$i]);
-                print_r($b[$i]);
+                $b[$i] = (($state[$i][$column])&0x80) ? (($state[$i][$column])<<1^0x011b) : (($state[$i][$column])<<1);
+//                print_r($a[$i]);
+//                print_r($b[$i]);
 
                 /* GF modulo: if $state[$i][$column] >= 128, then it will overflow when shifted left, so reduce */
                 //XOR with the primitive polynomial x^8 + x^4 + x^3 + x + 1 (0b1_0001_1011) – you can change it but it must be irreducible */
