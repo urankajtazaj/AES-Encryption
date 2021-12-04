@@ -26,6 +26,12 @@ for ($i = 0; $i < sizeof($state); $i++) {
 
 echo "\n<hr>";
 echo "<h3>Subbed input</h3>";
-$aes->subBytes($state);
+$state = $aes->subBytes($state);
+echo "<h3>Subbed input 2</h3>";
+$state = $aes->subBytes($state);
+echo "<h3>Subbed input 3</h3>";
+$state = $aes->subBytes($state);
+echo "<h3>Subbed input 4</h3>";
+$state = $aes->subBytes($state);
 
 echo "</pre>";

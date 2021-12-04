@@ -53,8 +53,8 @@ class AES
         for ($i = 0; $i < sizeof($state); $i++) {
             for ($j = 0; $j < sizeof($state[0]); $j++) {
                 $hex = hexdec($state[$i][$j]);
-                $state[$i][$j] = self::SBOX[$hex / 16][$hex % 16];
-                echo $state[$i][$j] . "\t";
+                $state[$i][$j] = dechex(self::SBOX[$hex / 16][$hex % 16]);
+                echo strtoupper($state[$i][$j]) . "\t";
             }
             echo "\n";
         }
@@ -95,7 +95,7 @@ class AES
         for ($i = 0; $i < sizeof(self::SBOX); $i++) {
             echo (self::MAPPER[$i] ?? $i) . "\t|";
             for ($j = 0; $j < sizeof(self::SBOX[$i]); $j++) {
-                echo self::SBOX[$i][$j] . "\t";
+                echo strtoupper(dechex(self::SBOX[$i][$j])) . "\t";
             }
             echo "\n";
         }
