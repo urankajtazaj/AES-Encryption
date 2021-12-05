@@ -1,5 +1,5 @@
 <?php
-require 'src/AES.php';
+require 'autoload.php';
 
 $plaintext = 'Hello World     ';
 $key = array(
