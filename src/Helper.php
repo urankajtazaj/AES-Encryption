@@ -32,7 +32,8 @@ class Helper
         $text = '';
         for ($i = 0; $i < sizeof($state); $i++) {
             for ($j = 0; $j < sizeof($state[$i]); $j++) {
-                $text .= $state[$j][$i];
+                $hex = strtoupper($state[$j][$i]);
+                $text .= str_pad($hex, 2, '0', STR_PAD_LEFT);
             }
         }
 
