@@ -22,6 +22,6 @@
             <div class="text-end">
                 <button onclick="window.AES.encrypt()" type="button" class="btn btn-primary">Encrypt</button>
             </div>
-        </form>
+        </div>
     </div>
 </div>
