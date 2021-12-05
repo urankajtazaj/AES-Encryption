@@ -14,6 +14,7 @@
                     <label for="key_input" class="col-sm-2 col-form-label">Key</label>
                     <div class="col-sm-10">
                         <input minlength="16" maxlength="16" type="text" class="form-control" id="key_input">
+                        <p class="small text-muted">Should be 16 characters long</p>
                     </div>
                 </div>
             </div>

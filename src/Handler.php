@@ -9,6 +9,6 @@ $aesEncrypted = $aes->encrypt($plaintext);
 ?>
 
 <hr>
-<p><b>Base 16</b><br><?= $aesEncrypted->getCipherText() ?></p>
+<p><b>Hex</b><br><?= $aesEncrypted->getCipherText() ?></p>
 <p><b>Base 64</b><br><?= $aesEncrypted->getCipherText(true) ?></p>
 <hr>
