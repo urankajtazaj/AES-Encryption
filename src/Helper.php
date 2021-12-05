@@ -24,9 +24,10 @@ class Helper
 
     /**
      * @param string[][] $state
+     * @param bool $toBase64
      * @return string
      */
-    public static function stateToText(array $state): string
+    public static function stateToText(array $state, bool $toBase64 = true): string
     {
         $text = '';
         for ($i = 0; $i < sizeof($state); $i++) {
@@ -35,6 +36,6 @@ class Helper
             }
         }
 
-        return base64_encode(pack('H*', $text));
+        return $toBase64 ? base64_encode(pack('H*', $text)) : $text;
     }
 }

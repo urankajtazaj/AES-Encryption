@@ -8,28 +8,29 @@ class AES
     /** @var int[][] */
     private array $key;
 
-    private string $plainKey;
-
     private array $allKeys;
 
-    public function __construct(array $key)
+    public function __construct(string $plainKey)
     {
-        $this->key = $key;
+        $this->key = $this->createKeyBlock($plainKey);
     }
 
-    private function createKeyBlock(array $key)
+    /**
+     * @param array $key
+     * @return array
+     */
+    private function createKeyBlock(string $key)
     {
-        Helper::printArray($key);
-
         $block = [];
         $col = 0;
-        for ($i = 0; $i < sizeof($key); $i++) {
-            $block[$i % 4][$col] = ($bytes[$i] ?? 0x0);
+        for ($i = 0; $i < strlen($key); $i++) {
+            $block[$i % 4][$col] = dechex(ord($key[$i]));
 
             if (($i + 1) % 4 === 0) {
                 $col++;
             }
         }
+
         return $block;
     }
 
@@ -274,9 +275,9 @@ class AES
             }
 
             Helper::printArray($state, "Output for Block " . ($index + 1));
-            $cipherText .= Helper::stateToText($state);
+            $cipherText .= Helper::stateToText($state, false);
         }
 
-        return $cipherText;
+        return base64_encode(pack('H*', $cipherText));
     }
 }
