@@ -8,11 +8,29 @@ class AES
     /** @var int[][] */
     private array $key;
 
+    private string $plainKey;
+
     private array $allKeys;
 
     public function __construct(array $key)
     {
         $this->key = $key;
+    }
+
+    private function createKeyBlock(array $key)
+    {
+        Helper::printArray($key);
+
+        $block = [];
+        $col = 0;
+        for ($i = 0; $i < sizeof($key); $i++) {
+            $block[$i % 4][$col] = ($bytes[$i] ?? 0x0);
+
+            if (($i + 1) % 4 === 0) {
+                $col++;
+            }
+        }
+        return $block;
     }
 
     private function generateBlocks(string $plaintext): array
@@ -43,7 +61,7 @@ class AES
         $col = 0;
 
         for ($i = 0; $i < $bytesLength + (16 - $bytesLength); $i++) {
-            $block[$i % 4][$col] = ($bytes[$i] ?? 0x00);
+            $block[$i % 4][$col] = ($bytes[$i] ?? 0x0);
 
             if (($i + 1) % 4 === 0) {
                 $col++;

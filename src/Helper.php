@@ -29,11 +29,12 @@ class Helper
     public static function stateToText(array $state): string
     {
         $text = '';
-        for ($i = 0; $i <sizeof($state); $i++) {
+        for ($i = 0; $i < sizeof($state); $i++) {
             for ($j = 0; $j < sizeof($state[$i]); $j++) {
-                $text .= chr(hexdec($state[$i][$j]));
+                $text .= $state[$j][$i];
             }
         }
-        return $text;
+
+        return base64_encode(pack('H*', $text));
     }
 }
