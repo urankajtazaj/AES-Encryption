@@ -10,9 +10,12 @@ class AES
 
     private array $allKeys;
 
+    private string $cipherText;
+
     public function __construct(string $plainKey)
     {
         $this->key = $this->createKeyBlock($plainKey);
+        $this->cipherText = '';
     }
 
     /**
@@ -250,14 +253,14 @@ class AES
 
     /**
      * @param string $plaintext
-     * @return string
+     * @return AES
      */
-    public function encrypt(string $plaintext): string
+    public function encrypt(string $plaintext): AES
     {
         $this->states = $this->generateBlocks($plaintext);
         $this->generateKeys();
 
-        $cipherText = '';
+        $cipher = '';
         foreach ($this->states as $index => $state) {
             $key = $this->getKey(0);
             $state = $this->addRoundKey($state, $key);
@@ -274,10 +277,19 @@ class AES
                 $state = $this->addRoundKey($state, $key);
             }
 
-            Helper::printArray($state, "Output for Block " . ($index + 1));
-            $cipherText .= Helper::stateToText($state, false);
+            $cipher .= Helper::stateToText($state, false);
         }
 
-        return base64_encode(pack('H*', $cipherText));
+        $this->cipherText = $cipher;
+        return $this;
+    }
+
+    /**
+     * @param bool $base64
+     * @return string
+     */
+    public function getCipherText(bool $base64 = false): string
+    {
+        return $base64 ? base64_encode(pack('H*', $this->cipherText)) : $this->cipherText;
     }
 }

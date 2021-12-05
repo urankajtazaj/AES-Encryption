@@ -7,5 +7,6 @@ $key = '1234567890123456';
 $aes = new AES($key);
 
 echo "<pre>";
-echo "Base64 text\n---------------------\n" . $aes->encrypt($plaintext);
+echo "BASE 64\n---------------------\n" . $aes->encrypt($plaintext)->getCipherText(true);
+echo "\n\nHEX\n---------------------\n" . $aes->encrypt($plaintext)->getCipherText();
 echo "</pre>";
