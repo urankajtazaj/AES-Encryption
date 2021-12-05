@@ -2,16 +2,8 @@
 
 class AES
 {
-    private const MAPPER = [
-        '10' => 'A',
-        '11' => 'B',
-        '12' => 'C',
-        '13' => 'D',
-        '14' => 'E',
-        '15' => 'F',
-    ];
-    private const RC=[0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36];
-    private array $allKeys;
+    private const ROUNDS = 10;
+    private const RC = [ 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36 ];
     private const SBOX = [
         //0    1     2     3     4     5     6     7     8     9     a     b     c     d     e     f
         [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76], // 0
@@ -32,32 +24,69 @@ class AES
         [0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16], // f
     ];
 
-    private string $plaintext;
-    private string $initialKey;
 
-    /**
-     * @param string $plaintext
-     * @param string $initialKey
-     */
-    public function __construct(string $plaintext, string $initialKey)
+    /** @var int[][] */
+    private array $states = [];
+
+    /** @var int[][] */
+    private array $key;
+
+    private array $allKeys;
+
+    public function __construct(array $key)
     {
-        $this->initialKey = $initialKey;
-        $this->plaintext = $plaintext;
+        $this->key = $key;
+    }
+
+    private function generateBlocks(string $plaintext): array
+    {
+        $tempState = [];
+        $row = 0;
+
+        for ($i = 0; $i < strlen($plaintext); $i++) {
+            $tempState[$row][$i % 16] = dechex(ord($plaintext[$i]));
+
+            if (($i + 1) % 16 === 0) {
+                $row++;
+            }
+        }
+
+        $blocks = [];
+        foreach ($tempState as $block) {
+            $blocks[] = $this->createBlock($block);
+        }
+
+        return $blocks;
+    }
+
+    private function createBlock(array $bytes): array
+    {
+        $bytesLength = sizeof($bytes);
+        $block = [];
+        $col = 0;
+
+        for ($i = 0; $i < $bytesLength + (16 - $bytesLength); $i++) {
+            $block[$i % 4][$col] = ($bytes[$i] ?? 0x00);
+
+            if (($i + 1) % 4 === 0) {
+                $col++;
+            }
+        }
+
+        return $block;
     }
 
     /**
      * @param int[][] $state
      * @return int[][]
      */
-    public function subBytes(array $state): array
+    private function subBytes(array $state): array
     {
         for ($i = 0; $i < sizeof($state); $i++) {
             for ($j = 0; $j < sizeof($state[0]); $j++) {
                 $hex = hexdec($state[$i][$j]);
                 $state[$i][$j] = dechex(self::SBOX[$hex / 16][$hex % 16]);
-                echo strtoupper($state[$i][$j]) . "\t";
             }
-            echo "\n";
         }
 
         return $state;
@@ -67,152 +96,93 @@ class AES
      * @param int[][] $state
      * @return int[][]
      */
-    public function shiftRows(array $state): array
+    private function shiftRows(array $state): array
     {
         $tempState = $state;
         for ($i = 1; $i < sizeof($state); $i++) {
             for ($j = sizeof($state[$i]) - 1; $j >= 0; $j--) {
-                $state[$i][$j] = $tempState[$i][(abs($j + $i)) % 4];
+                $state[$i][$j] = $tempState[$i][($j + $i) % 4];
             }
         }
 
         return $state;
     }
 
-    // public function printSbox(): void
-    // {
-    //     echo "\t";
-    //     for ($i = 0; $i <= 15; $i++) {
-    //         echo " " . (self::MAPPER[$i] ?? $i) . "\t";
-    //     }
-    //     echo "\n\t";
-
-    //     for ($i = 0; $i <= 15; $i++) {
-    //         echo '________';
-    //     }
-
-    //     echo "\n";
-
-    //     for ($i = 0; $i < sizeof(self::SBOX); $i++) {
-    //         echo (self::MAPPER[$i] ?? $i) . "\t|";
-    //         for ($j = 0; $j < sizeof(self::SBOX[$i]); $j++) {
-    //             echo strtoupper(dechex(self::SBOX[$i][$j])) . "\t";
-    //         }
-    //         echo "\n";
-    //     }
-    // }
-
-      /**
-     *
-     * @param int[][] $initialKey
-     * @return int[][] $w
-     */
-    public function generateKeys(array $initialKey)
+    private function generateKeys(): void
     {
-        $w =array();//holds all 10 keys
-        $index=0;
-        //Fill first key in the array
-        for($i=0 ; $i<count($initialKey); $i++)
+        $keys = [];
+        $index = 0;
+
+        for($i = 0; $i < count($this->key); $i++)
         {
-            $w[$i]=$initialKey[$i];
+            $keys[$i] = $this->key[$i];
             $index++;
         }
-        $roundKey=$w;//this is 4x4 matrix with a key for every round
 
-        //Calculate 10 keys and assign to variable "w"
-        for($round=1 ; $round<=10 ; $round++)
+        $roundKey = $keys;
+
+        for($round = 1; $round <= self::ROUNDS; $round++)
         {
-            $roundKey=$this->calculateRoundKey($roundKey,$round);
-            $w = array_merge($w, $roundKey); //merging keys together (adding -this- round key to overall keys)
-        }  
-
-        // for($i=0 ; $i<count($w); $i++)
-        // {
-        //     echo implode("",$w[$i]);
-        //     echo("\n");
-        // }
-        $this->allKeys = $w;
-    }
-
-
-    /**
-    *
-    * @param string $string
-    * @return string $string 
-    */
-    private function makeTwoChars($string)
-    {
-        if(strlen($string)==1)
-        {
-            $string="0".$string;
+            $roundKey=$this->calculateRoundKey($roundKey, $round);
+            $keys = array_merge($keys, $roundKey);
         }
-        return $string;
+        $this->allKeys = $keys;
     }
 
-    
     /**
-    *
-    * @param string[][] $key
-    * @return int[][] $roundKey 
-    */
-    private function calculateRoundKey($key,$round): array
+     * @param string[][] $key
+     * @param int $round
+     * @return int[][]
+     */
+    private function calculateRoundKey(array $key, int $round): array
     {
-        $v0=array();
-        $v1=array();
-        $v2=array();
-        $v3=array();
-        $index=0;
-        for($i=0 ; $i<count($key); $i++)
-        {
-            for($j=0 ; $j<count($key); $j++)
-            {
+        $v0 = [];
+        $v1 = [];
+        $v2 = [];
+        $v3 = [];
+
+        for($i = 0; $i < count($key); $i++) {
+            for($j = 0; $j < count($key); $j++) {
                 switch ($i) {
                     case 0:
-                        $v0[$j]=$key[$j][$i];
+                        $v0[$j] = $key[$j][$i];
                         break;
                     case 1:
-                        $v1[$j]=$key[$j][$i];
+                        $v1[$j] = $key[$j][$i];
                         break;
                     case 2:
-                        $v2[$j]=$key[$j][$i];
+                        $v2[$j] = $key[$j][$i];
                         break;
                     case 3:
-                        $v3[$j]=$key[$j][$i];
+                        $v3[$j] = $key[$j][$i];
                         break;
                 }
-
             }
-
         } 
 
         $w3_org=$v3;
-        //Shift for one to left
         $v3_0copy=$v3[0];
+
         $v3[0]=$v3[1];
         $v3[1]=$v3[2];
         $v3[2]=$v3[3];
         $v3[3]=$v3_0copy;
     
-        //Use sbox -fill with 0 before if string is only one char
-        for($i=0 ; $i<count($v0) ; $i++)
-        {
-            $v3[$i]=$this->makeTwoChars(dechex(self::SBOX[hexdec(substr($v3[$i], 0,1))][hexdec(substr($v3[$i], 1,2))]));
-        }
-        //XOR round coefficient widh first elem
-        $v3[0]=$this->makeTwoChars(dechex(hexdec($v3[0]) ^ self::RC[$round-1]));
-        for($i=0 ; $i<count($v0); $i++)
-        {
-            $v0[$i]=$this->makeTwoChars(dechex(hexdec($v0[$i]) ^ hexdec($v3[$i])));
-            $v1[$i]=$this->makeTwoChars(dechex(hexdec($v0[$i]) ^ hexdec($v1[$i])));
-            $v2[$i]=$this->makeTwoChars(dechex(hexdec($v1[$i]) ^ hexdec($v2[$i])));
-            $v3[$i]=$this->makeTwoChars(dechex(hexdec($v2[$i]) ^ hexdec($w3_org[$i])));
+        for($i = 0; $i < count($v0); $i++) {
+            $hex = hexdec($v3[$i]);
+            $v3[$i] = dechex(self::SBOX[$hex / 16][$hex % 16]);
         }
 
-        //merging arrays into 2d array
-        $result=$key;
-        for($elem=0; $elem<count($v0); $elem++)
-        {
-            
+        $v3[0] = dechex(hexdec($v3[0]) ^ self::RC[$round-1]);
+        for($i = 0; $i < count($v0); $i++) {
+            $v0[$i] = dechex(hexdec($v0[$i]) ^ hexdec($v3[$i]));
+            $v1[$i] = dechex(hexdec($v0[$i]) ^ hexdec($v1[$i]));
+            $v2[$i] = dechex(hexdec($v1[$i]) ^ hexdec($v2[$i]));
+            $v3[$i] = dechex(hexdec($v2[$i]) ^ hexdec($w3_org[$i]));
+        }
+
+        $result = $key;
+        for($elem = 0; $elem < count($v0); $elem++) {
             $result[$elem][0] = strtoupper($v0[$elem]);
             $result[$elem][1] = strtoupper($v1[$elem]);
             $result[$elem][2] = strtoupper($v2[$elem]);
@@ -220,49 +190,41 @@ class AES
         }
 
         return $result;
-
     }
 
-
-
     /**
-     *
      * @param int $round
      * @return int[][] $thisRoundKey
      */
-    public function getKey($round):array
+    private function getKey(int $round):array
     {
-        $thisRoundKey=array();
-        $start=$round*4;
-        $end=$start+4;
-        $count=0;
-        while($start<$end)
+        $thisRoundKey = array();
+        $start = $round * 4;
+        $end = $start + 4;
+        $count = 0;
+
+        while($start < $end)
         {
-            $thisRoundKey[$count]=$this->allKeys[$start];
+            $thisRoundKey[$count] = $this->allKeys[$start];
             $start++;
             $count++;
         }
+
         return $thisRoundKey;
-
     }
-
 
     /**
      * @param int[][] $state
-     * @param $number
      * @return int[][]
      */
-    public static function mixColumns(array $state):array {
+    private static function mixColumns(array $state): array {
 
         for ($column = 0; $column < 4; $column++) {
-            $a = array(4);
-            $b = array(4);
-            for ($i=0; $i<4; $i++) {
-                $a[$i] = hexdec($state[$i][$column]);
-                $b[$i] = (hexdec($state[$i][$column]) &0x80) ? (hexdec($state[$i][$column])<<1^0x011b) : (hexdec($state[$i][$column])<<1);
-
-                /* GF modulo: if $state[$i][$column] >= 128, then it will overflow when shifted left, so reduce */
-                //XOR with the primitive polynomial x^8 + x^4 + x^3 + x + 1 (0b1_0001_1011) – you can change it but it must be irreducible */
+            $a = [];
+            $b = [];
+            for ($i = 0; $i < 4; $i++) {
+                $a[] = hexdec($state[$i][$column]);
+                $b[] = hexdec($state[$i][$column]) & 0x80 ? hexdec($state[$i][$column]) << 1 ^ 0x011b : hexdec($state[$i][$column]) << 1;
             }
 
             $state[0][$column] = dechex($b[0] ^ $a[1] ^ $b[1] ^ $a[2] ^ $a[3]);
@@ -270,69 +232,87 @@ class AES
             $state[2][$column] = dechex($a[0] ^ $a[1] ^ $b[2] ^ $a[3] ^ $b[3]);
             $state[3][$column] = dechex($a[0] ^ $b[0] ^ $a[1] ^ $a[2] ^ $b[3]);
         }
+
         return $state;
     }
 
-    //XOR me key e gjenerum per mem na jep rez, qe osht state
-    //pozita (0,0) e state(array) qe vjen prej function para addRoundKey,ka me u XOR me Key ne poziten(0,0)...(3,3)
-    public static function addRoundKey($state, $expandedKey, $round, $number)
+    /**
+     * @param int[][] $state
+     * @param int[][] $expandedKey
+     * @return int[][]
+     */
+    private static function addRoundKey(array $state, array $expandedKey): array
     {
-        for ($rows = 0; $rows < $number; $rows++) {
-            for ($column = 0; $column < $number; $column++) {
-                $state[$rows][$column] =dechex(hexdec($state[$rows][$column]) ^ hexdec($expandedKey[$rows][$column]));
+        for ($rows = 0; $rows < 4; $rows++) {
+            for ($column = 0; $column < 4; $column++) {
+                $state[$rows][$column] = dechex(hexdec($state[$rows][$column]) ^ hexdec($expandedKey[$rows][$column]));
             }
         }
+
         return $state;
     }
 
     /**
-     * @return string
+     * @param int[][] $input
+     * @param string $title
      */
-    public function getPlaintext(): string
+    private function printArray(array $input, string $title): void
     {
-        return $this->plaintext;
-    }
-
-    /**
-     * @return string
-     */
-    public function getInitialKey(): string
-    {
-        return $this->initialKey;
-    }
-
-    public function printArray(array $input) {
+        echo "<h3>$title</h3>";
         for ($i = 0; $i <sizeof($input); $i++) {
             for ($j = 0; $j < sizeof($input[$i]); $j++) {
                 echo $input[$i][$j] . "\t";
             }
+            echo "\n";
+        }
         echo "\n";
+    }
+
+    /**
+     * @param int[][] $state
+     * @return string
+     */
+    private function stateToText(array $state): string
+    {
+        $text = '';
+        for ($i = 0; $i <sizeof($state); $i++) {
+            for ($j = 0; $j < sizeof($state[$i]); $j++) {
+                $text .= chr(hexdec($state[$i][$j]));
+            }
         }
+        return $text;
+    }
+
+    /**
+     * @param string $plaintext
+     * @return string
+     */
+    public function encrypt(string $plaintext): string
+    {
+        $this->states = $this->generateBlocks($plaintext);
+        $this->generateKeys();
+
+        $cipherText = '';
+        foreach ($this->states as $index => $state) {
+            $key = $this->getKey(0);
+            $state = $this->addRoundKey($state, $key);
+
+            for ($round = 1; $round <= self::ROUNDS; $round++) {
+                $state = $this->subBytes($state);
+                $state = $this->shiftRows($state);
+
+                if ($round !== self::ROUNDS) {
+                    $state = $this->mixColumns($state);
+                }
+
+                $key = $this->getKey($round);
+                $state = $this->addRoundKey($state, $key);
+            }
+
+            $this->printArray($state, "Output for Block " . ($index + 1));
+            $cipherText .= $this->stateToText($state);
         }
 
+        return $cipherText;
+    }
 }
-
-$testObject = new AES("a","a");
-
-$key = array(
-    array( "2B", "28","AB","09"),
-    array( "7E", "AE","F7","CF"),
-    array( "15", "D2","15","4F"),
-    array( "16", "A6","88","3C"));
-
-$plain = array(
-    array( "32", "88","31","E0"),
-    array( "43", "5A","31","37"),
-    array( "F6", "30","98","07"),
-    array( "A8", "8D","A2","34"));
-
-$testObject->generateKeys($key);
-
-$first_key=$testObject->getKey(0);
-$xor=$testObject->addRoundKey($plain, $first_key, 10, 4);
-$subbytes=$testObject->subBytes($xor);
-$shiftRows=$testObject->shiftRows($subbytes);
-$mixColumns=$testObject->mixColumns($shiftRows);
-echo "";
-$testObject->printArray($mixColumns);
-echo "";
